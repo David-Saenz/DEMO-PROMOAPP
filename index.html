@@ -1,194 +1,404 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PROMOAPP</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #f3f3f3; padding-bottom: 2rem; }
-
-    header { background: #222; color: #fff; padding: 1rem; text-align: center; }
-
-    .container { width: 95%; max-width: 1300px; margin: auto; padding: 1rem 0; }
-
-    /* Barra de búsqueda y filtros */
-    .filtros { display: flex; gap: 1rem; margin-bottom: 1rem; }
-    .filtros input, .filtros select { padding: 0.6rem; width: 100%; border-radius: 6px; border: 1px solid #bbb; }
-
-    /* Layout grid */
-    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-
-    /* TARJETAS */
-    .card { background: #fff; border-radius: 10px; padding: 1rem; box-shadow: 0 3px 10px rgba(0,0,0,0.1); margin-bottom: 1rem; }
-    .card h3 { margin-bottom: 0.3rem; }
-    .card p { margin-bottom: 0.2rem; }
-
-    /* Promos */
-    .promos .card { background: #ffe9c9; }
-
-    /* Grid de restaurantes */
-    .grid-restaurantes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
-
-    /* Botones de paginación */
-    .paginacion { text-align: center; margin-top: 1rem; }
-    .paginacion button { padding: 0.6rem 1rem; margin: 0 5px; border: none; border-radius: 5px; cursor: pointer; background: #333; color: white; }
-
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PROMOAPP</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>PROMOAPP</h1>
-  </header>
+    <header>
+        <h1>PROMOAPP</h1>
+    </header>
 
-  <div class="container">
+    <div class="container">
 
-    <!-- BUSCADOR Y FILTROS -->
-    <div class="filtros">
-      <input type="text" id="buscar" placeholder="Buscar restaurante...">
-      <select id="filtroComida">
-        <option value="">Todos los tipos</option>
-        <option value="tacos">Tacos</option>
-        <option value="carne">Carne</option>
-        <option value="pizza">Pizza</option>
-        <option value="mariscos">Mariscos</option>
-      </select>
+        <div class="tabs" role="tablist">
+            <button class="tab-btn active" data-view="restaurantes">Restaurantes</button>
+            <button class="tab-btn" data-view="promociones">Promociones</button>
+        </div>
+
+        <div class="layout">
+
+            <section id="view-restaurantes" class="card">
+                <div class="filtros">
+                    <input type="text" id="buscar" placeholder="Buscar restaurante...">
+                    </div>
+
+                <div id="restaurantes" class="grid-restaurantes"></div>
+            </section>
+
+            <section id="view-promociones" class="card" style="display:none;">
+                <div class="promos-header">
+                    <h2>Promociones semanales</h2>
+                    <div class="subtitle">Selecciona un día para ver promos</div>
+                </div>
+                <div class="day-list" id="days"></div>
+                <div id="promos" class="promos-grid"></div>
+            </section>
+
+        </div>
     </div>
-
-    <div class="layout">
-
-      <!-- PROMOCIONES -->
-      <section class="promos" id="promos"></section>
-
-      <!-- RESTAURANTES -->
-      <section>
-        <div id="restaurantes" class="grid-restaurantes">
-</div> <!-- Carruseles generados aquí -->
-        <div class="paginacion" id="paginacion"></div>
-      </section>
-
+    
+    <div id="menu-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal()">×</span>
+            <h2 id="modal-title">Menú</h2>
+            <div id="modal-body"></div>
+        </div>
     </div>
-  </div>
+    <script>
+    // BASE DE DATOS DINÁMICA
+    const datosRestaurantes = [
+        { nombre: "Maax Pizza", alimentos: "Pizza", horario: "11:00 a.m - 11:00 p.m", telefono: "6395011199", direccion: "https://www.google.com/maps/place/Maax+Pizza/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb13ea59dbacd9:0x9ec9df3af6251db9!8m2!3d28.2682562!4d-105.4801812!16s%2Fg%2F11c5bhq3s5?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "pizza", imagenes: ["img/Maax.jpeg"] },
+        { nombre: "Azucar y Sal", alimentos: "Desayunos", horario: "8:00 a.m - 9:00 p.m", telefono: "6391118787", direccion: "https://www.google.com/maps/place/Azucar+%26+Sal+Restaurante/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb13e6ee8311e5:0xf4bf2dc693ec2dd1!8m2!3d28.2846521!4d-105.494009!16s%2Fg%2F11fq8tr9s6?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "desayunos", imagenes: ["img/Azucar&sal.jpeg"] },
+        { nombre: "Antojitos Lupillo", alimentos: "Antojitos", horario: "11:30 a.m - 2:00 a.m", telefono: "6391001187", direccion: "https://www.google.com/maps/place/Antojitos+Lupillo/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb1309540579c3:0xd9e2e5c2d569f8cc!8m2!3d28.2746653!4d-105.4850639!16s%2Fg%2F11h_6fbjq9?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "antojitos", imagenes: ["img/AntojitosLupillo.jpeg"] },
+        { nombre: "La Patrona 2020", alimentos: "Mariscos", horario: "11:00 a.m - 7:00 p.m", telefono: "6391528113", direccion: "https://www.google.com/maps/place/LA+PATRONA+2020/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb1336dc26ae57:0x8617c70368c72b88!8m2!3d28.2601455!4d-105.4765715!16s%2Fg%2F11j95c_lh1?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "mariscos", imagenes: ["img/LaPatrona.jpeg"] },
+        { nombre: "Orsinis Pizzería", alimentos: "Pizzería", horario: "11:00 a.m - 10:00 p.m", telefono: "6394730097", direccion: "https://www.google.com/maps/place/Orsinis+Pizzeria+Meoqui/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86ea423558a62e17:0x39b7e12c6c874525!8m2!3d28.2733729!4d-105.4838137!16s%2Fg%2F1tdz0dmv?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "pizza", imagenes: ["img/Orsinis.jpeg"] },
+        { nombre: "Comida China Buena Suerte", alimentos: "Comida China", horario: "12:00 p.m - 7:30 p.m", telefono: "6391785977", direccion: "https://www.google.com/maps/place/COMIDA+CHINA/@28.2670738,-105.4878193,15z/data=!3m1!4b1!4m6!3m5!1s0x86eb13eb2e138dcf:0x67d776877b544095!8m2!3d28.2670742!4d-105.477541!16s%2Fg%2F11xysxrddm?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "china", imagenes: ["img/Comidachina.jpeg"] },
+        { nombre: "Con Todo o que?", alimentos: "Antojitos", horario: "11:00 a.m - 5:00 p.m", telefono: "6391060040", direccion: "N/A", comida: "antojitos", imagenes: ["img/Contodo.jpeg"] },
+        { nombre: "El Borrego de Oro", alimentos: "Carne/Borrego", horario: "9:00 a.m - 9:00 p.m", telefono: "6391067930", direccion: "https://www.google.com/maps/place/Taquer%C3%ADa+el+Borregode+Oro+-+Calle+Aldama/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb13c38e3aaaab:0xda3bb82b21712615!8m2!3d28.274711!4d-105.484791!16s%2Fg%2F11c2l1jg10?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "carne", imagenes: ["img/Taqueria.jpeg"] },
+        { nombre: "Restaurante Moctezuma", alimentos: "Mexicana", horario: "8:00 a.m - 7:00 p.m", telefono: "6391940975", direccion: "https://www.google.com/maps/place/Moctezuma+Restaurante+de+Pescados+y+Mariscos/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb1392ce99c6b5:0x79ce94a69049301b!8m2!3d28.2609761!4d-105.4767439!16s%2Fg%2F11cmtsyn7g?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "mexicana", imagenes: ["img/Moctezuma.jpeg"] },
+        { nombre: "Los Ajillos Restaurant", alimentos: "Mexicana", horario: "7:30 a.m - 9 p.m", telefono: "6391944331", direccion: "https://www.google.com/maps/place/Los+Ajillos+restaurant/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb13000efc049b:0xe8f6d1e0ecd0d98!8m2!3d28.2840094!4d-105.4942204!16s%2Fg%2F11wxmww9z_?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "mexicana", imagenes: ["img/LosAjillos.jpeg"] },
+        { nombre: "Mariscos El Rey Culichi", alimentos: "Mariscos", horario: "10:00 a.m - 6:30 p.m", telefono: "6391941825", direccion: "https://www.google.com/maps/place/%22MARISCOS+EL+REY+CULICHI%22/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb13c316048083:0x94e144398b84a58c!8m2!3d28.2608993!4d-105.4762436!16s%2Fg%2F11nxt27q3p?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "mariscos", imagenes: ["img/Mariscos.jpeg"] },
+        { nombre: "Pizzería La Sierra", alimentos: "Pizzería", horario: "8:00 a.m - 9:30 p.m", telefono: "6391920207", direccion: "https://www.google.com/maps/place/Pizzer%C3%ADa+La+Sierra+Meoqui/@28.4579481,-106.1355562,10z/data=!4m6!3m5!1s0x86eb13c485c29fe1:0xf273db6d0bfe5a03!8m2!3d28.2756915!4d-105.4863848!16s%2Fg%2F11c5rrwwq6?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "pizza", imagenes: ["img/LaSierra.jpeg"] },
+        { nombre: "Area 639 Hotdogs", alimentos: "Hotdogs", horario: "6:00 a.m - 1:30 p.m", telefono: "6392305101", direccion: "https://www.google.com/maps/place/%C3%81rea+639+Hotdogs/@28.2636331,-105.4810745,17.5z/data=!4m6!3m5!1s0x86eb1300299ddc6f:0x3ad7ee49d829144a!8m2!3d28.2635884!4d-105.4794082!16s%2Fg%2F11wfvj3m6f?entry=ttu&g_ep=EgoyMDI1MTExNy4wIKXMDSoASAFQAw%3D%3D", comida: "hotdogs", imagenes: ["img/HotDogs.jpeg"] }
+    ];
 
-<script>
-  // BASE DE DATOS DINÁMICA
-  const restaurantesData = [
-    { nombre: "Maax Pizza", alimentos: "pizza", horario: "11:00 AM - 11:00 PM", telefono: "639-501-1199", direccion: "Aldama 203 A, Centro, 33130 Pedro Meoqui, Chih.", comida: "pizza", imagenes: [
-        "img/restaurantes/el-rey-culichi/1.jpg",
-        "img/restaurantes/el-rey-culichi/2.jpg",
-        "img/restaurantes/el-rey-culichi/3.jpg"
-    ] },
-    { nombre: "Azucar y Sal", alimentos: "Desayunos", horario: "8:00 AM - 9:00 PM", telefono: "639-111-8787", direccion: "Carretera, Supermanzana km 148, 33130 Pedro Meoqui, Chih.", comida: "Desayunos", imagenes: [
-        "img/restaurantes/la-sierra/1.jpg",
-        "img/restaurantes/la-sierra/2.jpg",
-        "img/restaurantes/la-sierra/3.jpg"
-    ] },
-    { nombre: "Antojitos Lupillo", alimentos: "Hamburguesas", horario: "11:30 AM - 2:00 PM", telefono: "639-100-1187", direccion: "Calle Juan Aldama 2109, Centro, 33130 Pedro Meoqui, Chih.", comida: "Hamburguesas", imagenes: [
-        "img/restaurantes/area-639/1.jpg",
-        "img/restaurantes/area-639/2.jpg",
-        "img/restaurantes/area-639/3.jpg"
-    ] },
-    { nombre: "Mariscos La Ola", alimentos: "mariscos", horario: "11:00 AM - 9:00 PM", telefono: "639-777-2222", direccion: "Niños Héroes #80", comida: "mariscos", imagenes: [
-        "img/restaurantes/moctezuma/1.jpg",
-        "img/restaurantes/moctezuma/2.jpg",
-        "img/restaurantes/moctezuma/3.jpg"
-    ] },
-    { nombre: "Maax Pizza", alimentos: "pizza", horario: "11:00 AM - 11:00 PM", telefono: "639-501-1199", direccion: "Aldama 203 A, Centro, 33130 Pedro Meoqui, Chih.", comida: "pizza" },
-    { nombre: "Azucar y Sal", alimentos: "Desayunos", horario: "8:00 AM - 9:00 PM", telefono: "639-111-8787", direccion: "Carretera, Supermanzana km 148, 33130 Pedro Meoqui, Chih.", comida: "Desayunos" },
-    { nombre: "Antojillos Lupillo", alimentos: "Hamburguesas", horario: "11:30 AM - 2:00 PM", telefono: "639-100-1187", direccion: "Calle Juan Aldama 2109, Centro, 33130 Pedro Meoqui, Chih.", comida: "Hamburguesas" },
-    { nombre: "Mariscos La Ola", alimentos: "mariscos", horario: "11:00 AM - 9:00 PM", telefono: "639-777-2222", direccion: "Niños Héroes #80", comida: "mariscos" }
-  ];
+    // DATOS DEL MENÚ (Mantenidos para la funcionalidad del modal)
+    const datosMenu = {
+        "Maax Pizza": `
+            <h4>Pizzas (Grande)</h4>
+            <ul>
+                <li>Pizza de 1 Ingrediente: MXN 120.00</li>
+                <li>Pizza Mexicana (Frijol, jalapeños, cebolla, salchicha, chorizo): MXN 175.00</li>
+                <li>Pizza Pastorera: MXN 185.00</li>
+                <li>Pizza Especial Max (Jamón, salami, champiñones, cebolla, etc.): MXN 185.00</li>
+            </ul>
+            <h4>Adicionales</h4>
+            <ul>
+                <li>Baguette Mexicano: MXN 80.00</li>
+                <li>Orden de papas gajo: MXN 45.00</li>
+            </ul>`,
+        "Azucar y Sal": `
+            <h4>Panadería y Desayunos</h4>
+            <ul>
+                <li>Chilaquiles y Enchiladas.</li>
+                <li>Emparedados, Baguette, Chapatas.</li>
+                <li>Panadería (Azúcar y Sal).</li>
+                <li>Bebidas Frías y Calientes.</li>
+                <li>Repostería (Pasteles y Postres).</li>
+            </ul>`,
+        "Antojitos Lupillo": `
+            <h4>Desayunos Caseros</h4>
+            <ul>
+                <li>Chilaquiles con Pollo / Huevo / Mixtos: $120.00 - $130.00</li>
+                <li>Huevo con Chorizo / Jamón / Papa / a la Mexicana: $110.00 - $120.00</li>
+                <li>Omelette de Jamón o a la Mexicana: $120.00</li>
+            </ul>
+            <h4>Comidas Caseras</h4>
+            <ul>
+                <li>Milanesa de Pollo o Res Empanizada: $130.00</li>
+                <li>Enchiladas Suizas: $130.00</li>
+                <li>Bistec a la Mexicana: $140.00</li>
+            </ul>`,
+        "La Patrona 2020": `
+            <h4>Mariscos y Carnes</h4>
+            <p>Se encontraron diferentes menús para La Patrona, incluyendo tacos de sirloin, hamburguesas, flautas y sopes. El menú puede variar por sucursal.</p>
+            <ul>
+                <li>Orden de 4 Tacos de Sirloin asado al carbón.</li>
+                <li>Hamburguesa de sirloin.</li>
+                <li>Flautas de pollo o papa.</li>
+                <li>Chilaquiles rellenos.</li>
+            </ul>`,
+        "Orsinis Pizzería": `
+            <h4>Pizzas y Pastas (Precios de referencia)</h4>
+            <ul>
+                <li>Pizza Hawaiana: MX$99.00</li>
+                <li>Pizza Mediana 11": MX$179.00</li>
+                <li>Pizza Grande 13": MX$238.00</li>
+                <li>Orsinis Especial (Jamón, salami, chorizo, champiñón, etc.): MX$111.00</li>
+                <li>Spaguetti Bolognese: MX$121.00</li>
+                <li>Fettuccine Alfredo: MX$123.00</li>
+            </ul>`,
+        "Comida China Buena Suerte": `
+            <h4>Paquetes y Platillos (Precios de referencia)</h4>
+            <ul>
+                <li>Paquete Chico Arroz + Guiso: $ 99.00</li>
+                <li>Paquete 3 Guisos + Acompañamiento: $ 160.00</li>
+                <li>Arroz / Espagueti: $ 74.00 (Porción generosa)</li>
+                <li>Pollo Agridulce / Pollo Empanizado / Res con Brócoli: $ 81.00 - $87.00</li>
+            </ul>`,
+        "Con Todo o que?": `
+            <p style="text-align:center;">**Menú no disponible en línea.** Por favor, contacte directamente al restaurante para consultar sus opciones.</p>`,
+        "El Borrego de Oro": `
+            <h4>Tacos y Burritos (Precios de referencia)</h4>
+            <ul>
+                <li>Orden de Tacos Bistec de Res (4 tacos): $100.00</li>
+                <li>Burrito de Bistec de Res (30cm): $120.00</li>
+                <li>Orden de Tacos Combinados (Res y Puerco): $100.00</li>
+                <li>Orden de Tacos Barbacoa de Puerco: $100.00</li>
+            </ul>`,
+        "Restaurante Moctezuma": `
+            <h4>Hamburguesas y Cortes (Precios de referencia)</h4>
+            <ul>
+                <li>Patata Bacon Burger / La 4 Quesos: $175 - $195</li>
+                <li>Hamburguesa BALBOA (300g Sirloin, doble queso, panela, piña): $199</li>
+                <li>Rib Eye 500g / Arrachera 300g (Cortes a la Parrilla)</li>
+                <li>Parrillada Sonora (1.5 Kg de varias carnes): $1,650</li>
+            </ul>`,
+        "Los Ajillos Restaurant": `
+            <p style="text-align:center;">**Menú no disponible en línea.** Por favor, contacte directamente al restaurante para consultar sus opciones.</p>`,
+        "Mariscos El Rey Culichi": `
+            <h4>Especialidades (Precios de referencia en USD, pueden variar)</h4>
+            <ul>
+                <li>La Torre de Mariscos: $27.99</li>
+                <li>La Botana Placosa: $27.99</li>
+                <li>Aguachiles Negros o Verdes: $19.99</li>
+                <li>Taco de Camarón / Pescado: $3.99 +</li>
+                <li>Quesadilla de Camarón: $12.99 +</li>
+            </ul>`,
+        "Pizzería La Sierra": `
+            <h4>Pizzas y Más</h4>
+            <ul>
+                <li>Pizza La Sierra (Salami, pepperoni, champiñones, etc.)</li>
+                <li>Pizza Hawaiana / Ranchera / Carne Asada / Pollo BBQ.</li>
+                <li>Hamburguesa La Sierra (Res, queso, jamón, piña).</li>
+                <li>Complementos: Papas Nachos, Papas Francesas, Alitas.</li>
+                <li>Desayunos & Hot Cakes.</li>
+            </ul>`,
+        "Area 639 Hotdogs": `
+            <p style="text-align:center;">**Menú no disponible en el snippet de búsqueda.** El restaurante se especializa en Hotdogs, por favor, contacte para más detalles.</p>`
+    };
 
-  const promosData = [
-    { restaurante: "Maax-Pizza", promo: "2 pizza grandes de 1 ingrdiente a solo $269, y 2 pizzas familiares de 1 ingrdiente a solo $299", dia: " Todos los Días" },
-    { restaurante: "La Cabaña Grill", promo: "20% en cortes", dia: "Viernes" },
-    { restaurante: "Pizzería Don Luigi", promo: "Pizza + refresco a $199", dia: "Domingo" }
-  ];
+    // Datos de promociones (ejemplos)
+    const datosPromos = [
+        { restaurante: "Maax Pizza", promo: "Todos los Días — 2 pizza grandes de 1 ingrdiente a solo $269, y 2 pizzas familiares de 1 ingrdiente a solo $299.", dia: "Todos los Días" },
+        { restaurante: "Azucar y Sal", promo: "Desayuno completo: Chilaquiles + Café + Jugo por $120.", dia: "Lunes" },
+        { restaurante: "Mariscos La Patrona 2020", promo: "2x1 en tacos de camarón y pescado.", dia: "Viernes" },
+        { restaurante: "Orsinis Pizzería", promo: "Pizza familiar de un ingrediente + refresco 2L por $250.", dia: "Domingo" },
+        { restaurante: "Area 639 Hotdogs", promo: "Hotdog gigante + papas + agua por $90.", dia: "Miércoles" },
+        { restaurante: "El Borrego de Oro", promo: "20% de descuento en barbacoa para llevar.", dia: "Domingo" }
+    ];
 
-  const restaurantesContainer = document.getElementById('restaurantes');
-  const promosContainer = document.getElementById('promos');
-  const paginacionContainer = document.getElementById('paginacion');
+    // Elementos del DOM
+    const contenedorRestaurantes = document.getElementById('restaurantes');
+    const contenedorPromos = document.getElementById('promos');
+    const contenedorDias = document.getElementById('days');
+    const inputBuscar = document.getElementById('buscar');
+    const modal = document.getElementById('menu-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
 
-  let paginaActual = 1;
-  const porPagina = 3;
-
-  function renderPromos() {
-    let html = `<h2>Promociones</h2>`;
-    promosData.forEach(p => {
-      html += `<div class='card'><h3>${p.restaurante}</h3><p>${p.dia} — ${p.promo}</p></div>`;
+    // UI: Manejo de pestañas
+    document.querySelectorAll('.tab-btn').forEach(boton => {
+        boton.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            boton.classList.add('active');
+            const vista = boton.getAttribute('data-view');
+            cambiarVista(vista);
+        });
     });
-    promosContainer.innerHTML = html;
-  }
-
-  function renderRestaurantes(lista) {
-    const inicio = (paginaActual - 1) * porPagina;
-    const paginados = lista.slice(inicio, inicio + porPagina);
-
-    restaurantesContainer.innerHTML = paginados.map(r => `
-      <div class='card'>
-        <h3>${r.nombre}</h3>
-        <p><strong>Comida:</strong> ${r.comida}</p>
-        <p><strong>Horario:</strong> ${r.horario}</p>
-        <p><strong>Tel:</strong> ${r.telefono}</p>
-        <p><strong>Dirección:</strong> ${r.direccion}</p>
-      </div>
-    `).join('');
-
-    renderPaginacion(lista.length);
-  }
-
-  function renderPaginacion(total) {
-    const paginas = Math.ceil(total / porPagina);
-    paginacionContainer.innerHTML = '';
-
-    for (let i = 1; i <= paginas; i++) {
-      const btn = document.createElement('button');
-      btn.textContent = i;
-      btn.onclick = () => { paginaActual = i; filtrar(); };
-      paginacionContainer.appendChild(btn);
+    
+    // UI: Funciones del Modal
+    function mostrarMenu(nombreRestaurante) {
+        const menuHTML = datosMenu[nombreRestaurante] || '<p>Menú no encontrado.</p>';
+        modalTitle.textContent = `Menú de ${nombreRestaurante}`;
+        modalBody.innerHTML = menuHTML;
+        modal.style.display = 'block';
     }
-  }
 
-  function filtrar() {
-    const busqueda = document.getElementById('buscar').value.toLowerCase();
-    const comida = document.getElementById('filtroComida').value;
+    function cerrarModal() {
+        modal.style.display = 'none';
+    }
 
-    let resultados = restaurantesData.filter(r => 
-      r.nombre.toLowerCase().includes(busqueda) &&
-      (comida === '' || r.comida === comida)
-    );
+    // Cerrar modal al hacer clic fuera de él
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            cerrarModal();
+        }
+    }
 
-    renderRestaurantes(resultados);
-    inicializarCarruseles();
-  }
+    // Función para cambiar la vista (Restaurantes / Promociones)
+    function cambiarVista(vista) {
+        document.getElementById('view-restaurantes').style.display = (vista === 'restaurantes') ? 'block' : 'none';
+        document.getElementById('view-promociones').style.display = (vista === 'promociones') ? 'block' : 'none';
+        if (vista === 'promociones') renderizarPromosPorDia(diaSeleccionado);
+    }
 
-  document.getElementById('buscar').addEventListener('input', filtrar);
-  document.getElementById('filtroComida').addEventListener('change', filtrar);
+    // RENDERIZAR RESTAURANTES
+    function renderizarRestaurantes(lista) {
+        if (!lista || lista.length === 0) {
+            contenedorRestaurantes.innerHTML = `<div class="card card-message"><p>No se encontraron restaurantes.</p></div>`;
+            return;
+        }
 
-  renderPromos();
-  filtrar();
+        contenedorRestaurantes.innerHTML = lista.map((rest, indice) => {
+            const tieneImagenes = Array.isArray(rest.imagenes) && rest.imagenes.length > 0;
+            const htmlImagenes = tieneImagenes ? `
+                <div class="carousel" data-idx="${indice}">
+                    ${rest.imagenes.map(src => `<img src="${src}" alt="Imágen de ${rest.nombre}">`).join('')}
+                    ${rest.imagenes.length > 1 ? `<button class="nav prev" aria-label="Anterior">◀</button><button class="nav next" aria-label="Siguiente">▶</button>` : ''}
+                    ${rest.imagenes.length > 1 ? `<div class="dots">${rest.imagenes.map((_, i) => `<span class="dot" data-dot-index="${i}"></span>`).join('')}</div>` : ''}
+                </div>
+            ` : `<div class="carousel" data-idx="${indice}"><div class="no-img-placeholder">Sin imagen disponible</div></div>`;
 
+            const textoDireccion = rest.direccion === 'N/A' || rest.direccion === '' ? 'N/D' : 'Ver Ubicación';
+            const direccionHTML = (rest.direccion === 'N/A' || rest.direccion === '') 
+                                    ? 'N/D' 
+                                    : `<a href="${rest.direccion}" target="_blank">${textoDireccion}</a>`;
 
-  // Carrusel dinámico
-  function inicializarCarruseles() {
-    document.querySelectorAll('.carousel').forEach(carousel => {
-      let index = 0;
-      const imgs = carousel.querySelectorAll('img');
-      const next = carousel.querySelector('.next');
-      const prev = carousel.querySelector('.prev');
+            // AÑADIDO: onclick al h3
+            return `
+                <div class="card" data-nombre="${rest.nombre.toLowerCase()}">
+                    <div class="rest-row">
+                        ${htmlImagenes}
+                        <div class="rest-meta">
+                            <div>
+                                <h3 class="rest-title-clickable" onclick="mostrarMenu('${rest.nombre.replace(/'/g, "\\'")}')">${rest.nombre}</h3>
+                                <p><strong>Tipo:</strong> ${rest.comida || rest.alimentos || 'N/A'}</p>
+                                <p><strong>Horario:</strong> ${rest.horario || 'N/A'}</p>
+                                <p><strong>Tel:</strong> ${rest.telefono || 'N/A'}</p>
+                                <p><strong>Dirección:</strong> ${direccionHTML}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
 
-      function show(i) {
-        imgs.forEach(img => img.style.display = 'none');
-        imgs[i].style.display = 'block';
-      }
+        inicializarCarruseles();
+    }
+    
+    // FILTRADO (Simplificado para solo buscar por nombre)
+    function filtrar() {
+        const busqueda = inputBuscar.value.trim().toLowerCase();
 
-      next.onclick = () => { index = (index + 1) % imgs.length; show(index); };
-      prev.onclick = () => { index = (index - 1 + imgs.length) % imgs.length; show(index); };
+        const resultados = datosRestaurantes.filter(rest => {
+            const nombre = (rest.nombre || '').toLowerCase();
+            const coincideNombre = nombre.includes(busqueda);
+            
+            // ELIMINADO: Lógica de filtrado por tipo de comida
+            return coincideNombre;
+        });
 
-      show(0);
-    });
-  }
+        renderizarRestaurantes(resultados);
+    }
 
+    // Event listeners
+    inputBuscar.addEventListener('input', filtrar);
+    // ELIMINADO: Event listener para filtroSelect
+
+    // CARRUSEL (Sin cambios)
+    function inicializarCarruseles() {
+        document.querySelectorAll('.carousel').forEach(carrusel => {
+            const imagenes = Array.from(carrusel.querySelectorAll('img'));
+            if (imagenes.length === 0) return;
+            let indiceActual = 0;
+            const botonSiguiente = carrusel.querySelector('.next');
+            const botonAnterior = carrusel.querySelector('.prev');
+            const puntos = Array.from(carrusel.querySelectorAll('.dot'));
+
+            function actualizarPuntos() {
+                puntos.forEach((punto, i) => {
+                    punto.classList.toggle('active', i === indiceActual);
+                });
+            }
+
+            function mostrarImagen(i) {
+                imagenes.forEach((img, idx) => img.style.display = (idx === i) ? 'block' : 'none');
+                actualizarPuntos();
+            }
+
+            if (botonSiguiente && botonAnterior) {
+                botonSiguiente.onclick = () => { indiceActual = (indiceActual + 1) % imagenes.length; mostrarImagen(indiceActual); };
+                botonAnterior.onclick = () => { indiceActual = (indiceActual - 1 + imagenes.length) % imagenes.length; mostrarImagen(indiceActual); };
+            }
+            puntos.forEach(punto => {
+                punto.addEventListener('click', (e) => {
+                    const indicePunto = parseInt(e.target.getAttribute('data-dot-index'));
+                    indiceActual = indicePunto;
+                    mostrarImagen(indiceActual);
+                });
+            });
+
+            mostrarImagen(0);
+        });
+    }
+
+    // PROMOCIONES POR DÍA (Sin cambios)
+    const ordenDias = ['Todos', 'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    let promosAgrupadasPorDia = {};
+    let diaSeleccionado = 'Todos';
+
+    function agruparPromos() {
+        promosAgrupadasPorDia = {};
+        ordenDias.forEach(d => promosAgrupadasPorDia[d] = []);
+
+        datosPromos.forEach(promo => {
+            const diaRaw = (promo.dia || '').toLowerCase();
+
+            if (diaRaw.includes('todos')) { promosAgrupadasPorDia['Todos'].push(promo); } 
+            else {
+                let coincidencias = false;
+                ordenDias.slice(1).forEach(dia => {
+                    if (diaRaw.includes(dia.toLowerCase().substring(0, 3))) {
+                        promosAgrupadasPorDia[dia].push(promo);
+                        coincidencias = true;
+                    }
+                });
+                if (!coincidencias && !diaRaw.includes('todos')) { promosAgrupadasPorDia['Todos'].push(promo); }
+            }
+        });
+    }
+
+    function renderizarSelectorDias() {
+        contenedorDias.innerHTML = ordenDias.map(d => `<button class="day-btn" data-day="${d}">${d}</button>`).join('');
+        contenedorDias.querySelectorAll('.day-btn').forEach(boton => {
+            boton.addEventListener('click', () => {
+                diaSeleccionado = boton.getAttribute('data-day');
+                renderizarPromosPorDia(diaSeleccionado);
+                contenedorDias.querySelectorAll('.day-btn').forEach(b => { b.classList.remove('active'); });
+                boton.classList.add('active');
+            });
+        });
+        const primerBoton = contenedorDias.querySelector('.day-btn');
+        if (primerBoton) { primerBoton.click(); }
+    }
+
+    function renderizarPromosPorDia(dia) {
+        const promosPermanentes = datosPromos.filter(p => (p.dia || '').toLowerCase().includes('todos'));
+        let listaPromos = [];
+        
+        if (dia === 'Todos') {
+            listaPromos = promosAgrupadasPorDia['Todos'];
+        } else {
+            const promosDiaEspecifico = (promosAgrupadasPorDia[dia] || []);
+            listaPromos = [...new Set([...promosPermanentes, ...promosDiaEspecifico])];
+        }
+
+        if (!listaPromos || listaPromos.length === 0) {
+            contenedorPromos.innerHTML = `<div class="promo-card promo-message"><p>No hay promociones disponibles para **${dia}**.</p></div>`;
+            return;
+        }
+
+        contenedorPromos.innerHTML = listaPromos.map(promo => {
+            const esPermanente = (promo.dia || '').toLowerCase().includes('todos');
+            return `
+                <div class="promo-card ${esPermanente ? 'promo-permanent' : ''}">
+                    <h3>${promo.restaurante}</h3>
+                    <p class="promo-day-label">**${promo.dia}**</p>
+                    <p>${promo.promo}</p>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Inicialización al cargar la página
+    agruparPromos();
+    renderizarSelectorDias();
+    filtrar();
+    cambiarVista('restaurantes');
 </script>
 
 </body>
